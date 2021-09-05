@@ -12,6 +12,7 @@ import mikroConfig from "./mikro-orm.config";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/Post";
 import { UserResolver } from "./resolvers/User";
+import cors, { CorsOptions } from 'cors';
 
 import "reflect-metadata";
 
@@ -23,6 +24,13 @@ import "reflect-metadata";
   const redisClient = redis.createClient();
 
   const app = express();
+
+  const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true,
+  } as CorsOptions
+
+  app.use(cors(corsOptions));
 
   app.use(
     session({
@@ -44,6 +52,7 @@ import "reflect-metadata";
   );
 
   const apolloServer = new ApolloServer({
+    debug: true,
     schema: await buildSchema({
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
@@ -62,6 +71,7 @@ import "reflect-metadata";
 
   apolloServer.applyMiddleware({
     app,
+    cors: false,
   });
 
   app.listen(5000, () => {

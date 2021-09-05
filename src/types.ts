@@ -7,3 +7,8 @@ export type MyContext = {
   req: Request & { session: Session };
   res: Response;
 };
+
+export type FieldErrorType<Fields> = {
+  field: Fields;
+  message: string;
+};

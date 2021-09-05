@@ -10,8 +10,14 @@ import {
   Query,
   Resolver,
 } from "type-graphql";
+import { FieldErrorType } from '../types'
 
 import { User } from "./../entities/User";
+
+enum Fields {
+  USERNAME = 'username',
+  PASSWORD = 'password',
+}
 
 @InputType()
 class UsernamePasswordInput {
@@ -63,26 +69,20 @@ export class UserResolver {
     @Arg("input") { username, password }: UsernamePasswordInput,
     @Ctx() { req, em }: MyContext
   ): Promise<UserResponse> {
+    let errors: Array<FieldErrorType<Fields>> = [];
+
     if (username.length < 3) {
-      return {
-        errors: [
-          {
-            field: "invalid username",
-            message: "username cannot be less than 5 characters",
-          },
-        ],
-      };
+      errors.push({
+        field: Fields.USERNAME,
+        message: "Username cannot be less than 3 characters",
+      });
     }
 
     if (password.length < 3) {
-      return {
-        errors: [
-          {
-            field: "invalid password",
-            message: "password cannot be less than 5 characters",
-          },
-        ],
-      };
+      errors.push({
+        field: Fields.PASSWORD,
+        message: "Password cannot be less than 3 characters",
+      })
     }
 
     const hashedPassword = await argon2.hash(password);
@@ -96,15 +96,15 @@ export class UserResolver {
       await em.persistAndFlush(user);
     } catch (e) {
       if (e.code === "23505") {
-        return {
-          errors: [
-            {
-              field: "username",
-              message: "Username already exists",
-            },
-          ],
-        };
+        errors.push({
+            field: Fields.USERNAME,
+            message: "Username already exists",
+          });
+        }
       }
+
+    if (errors.length > 0) {
+      return { errors };
     }
 
     req.session.userId = user.id;
@@ -117,30 +117,27 @@ export class UserResolver {
     @Arg("input") { username, password }: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
+    const errors: Array<FieldErrorType<Fields>> = [];
     const user = await em.findOne(User, { username });
 
     if (!user) {
-      return {
-        errors: [
-          {
-            field: "username incorrect",
-            message: "user not found",
-          },
-        ],
-      };
+      errors.push({
+        field: Fields.USERNAME,
+        message: "User does not exist",
+      });
+
+      return { errors };
     }
 
     const isValidPassword = await argon2.verify(user.password, password);
 
     if (!isValidPassword) {
-      return {
-        errors: [
-          {
-            field: "incorrect credentials",
-            message: "password is incorrect",
-          },
-        ],
-      };
+      errors.push({
+        field: Fields.PASSWORD,
+        message: "Password is incorrect",
+      });
+
+      return { errors };
     }
 
     req.session.userId = user.id;
