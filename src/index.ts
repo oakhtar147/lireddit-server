@@ -7,12 +7,12 @@ import redis from "redis";
 import { buildSchema } from "type-graphql";
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 
-import { __prod__ } from "./constants";
+import { COOKIE_NAME, __prod__ } from "./constants";
 import mikroConfig from "./mikro-orm.config";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/Post";
 import { UserResolver } from "./resolvers/User";
-import cors, { CorsOptions } from 'cors';
+import cors, { CorsOptions } from "cors";
 
 import "reflect-metadata";
 
@@ -26,15 +26,15 @@ import "reflect-metadata";
   const app = express();
 
   const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: "http://localhost:3000",
     credentials: true,
-  } as CorsOptions
+  } as CorsOptions;
 
   app.use(cors(corsOptions));
 
   app.use(
     session({
-      name: "qid",
+      name: COOKIE_NAME,
       store: new RedisStore({
         client: redisClient,
         disableTouch: true,

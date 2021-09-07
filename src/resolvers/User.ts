@@ -13,6 +13,7 @@ import {
 import { FieldErrorType } from '../types'
 
 import { User } from "./../entities/User";
+import { COOKIE_NAME } from '../constants';
 
 enum Fields {
   USERNAME = 'username',
@@ -143,5 +144,21 @@ export class UserResolver {
     req.session.userId = user.id;
 
     return { user };
+  }
+  
+  @Mutation(() => Boolean)
+  async logout(
+    @Ctx() { req, res }: MyContext
+  ) {
+    return await new Promise((resolve) => {
+      req.session.destroy((err) => {
+        if (err) {
+          resolve(false);
+        }
+        
+        res.clearCookie(COOKIE_NAME)
+        resolve(true);
+      });
+    });
   }
 }
