@@ -1,10 +1,10 @@
-import { UsernamePasswordInput } from "src/resolvers/User";
+import { RegisterInput } from "src/resolvers/User";
 import { FieldErrorType } from "src/types";
 import { UserFields } from '../resolvers/User';
 
 
 export function validateRegistration(
-  { username, password, email }: UsernamePasswordInput, 
+  { username, password, email }: RegisterInput, 
  ) {
   const errors:  Array<FieldErrorType<UserFields>> = [];
 

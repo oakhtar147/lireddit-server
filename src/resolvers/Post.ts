@@ -1,4 +1,5 @@
 import { MyContext } from "src/types";
+import { sleep } from "../utils/sleep";
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 
 import { Post } from "../entities/Post";

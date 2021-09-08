@@ -23,18 +23,25 @@ export enum UserFields {
   PASSWORD = 'password',
 }
 
+
+/** SHARED TYPES */
 @InputType()
-export class UsernamePasswordInput {
+class LoginInput {
   @Field()
   username: string;
-
-  @Field()
-  email: string;
-
+  
   @Field()
   password: string;
 }
 
+@InputType()
+export class RegisterInput extends LoginInput {
+  @Field()
+  email: string;
+}
+
+
+/** RESOLVERS */
 @ObjectType()
 class UserResponse {
   @Field(() => [FieldError], { nullable: true })
@@ -46,11 +53,18 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => [User]) getUsers(
+    @Ctx() { em }: MyContext
+  ) {
+    return em.find(User, {});
+  }
+
+
   @Query(() => User, { nullable: true })
   async me(
     @Ctx() {req, em}: MyContext
   ): Promise<User | null> {   
-    if (!req.session.userId) {
+    if (!req.session) {
       return null;
     }
 
@@ -64,7 +78,7 @@ export class UserResolver {
 
   @Mutation(() => UserResponse, { nullable: true })
   async register(
-    @Arg("input") input: UsernamePasswordInput,
+    @Arg("input") input: RegisterInput,
     @Ctx() { req, em }: MyContext
   ): Promise<UserResponse> {
 
@@ -114,7 +128,7 @@ export class UserResolver {
 
   @Mutation(() => UserResponse, { nullable: true })
   async login(
-    @Arg("input") { username, password }: UsernamePasswordInput,
+    @Arg("input") { username, password }: LoginInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const errors: Array<FieldErrorType<UserFields>> = [];
@@ -149,14 +163,16 @@ export class UserResolver {
   async logout(
     @Ctx() { req, res }: MyContext
   ) {
-    return await new Promise((resolve) => {
+    return new Promise((resolve) => {
       req.session.destroy((err) => {
         if (err) {
           resolve(false);
+          return;
         }
         
         res.clearCookie(COOKIE_NAME)
         resolve(true);
+        return;
       });
     });
   }
