@@ -14,28 +14,25 @@ import { FieldErrorType } from '../types'
 
 import { User } from "./../entities/User";
 import { COOKIE_NAME } from '../constants';
+import { FieldError } from '../utils/FieldError';
+import { validateRegistration } from '../utils/registerValidation';
 
-enum Fields {
+export enum UserFields {
+  EMAIL = 'email',
   USERNAME = 'username',
   PASSWORD = 'password',
 }
 
 @InputType()
-class UsernamePasswordInput {
+export class UsernamePasswordInput {
   @Field()
   username: string;
 
   @Field()
+  email: string;
+
+  @Field()
   password: string;
-}
-
-@ObjectType()
-class FieldError {
-  @Field()
-  field: string;
-
-  @Field()
-  message: string;
 }
 
 @ObjectType()
@@ -67,29 +64,33 @@ export class UserResolver {
 
   @Mutation(() => UserResponse, { nullable: true })
   async register(
-    @Arg("input") { username, password }: UsernamePasswordInput,
+    @Arg("input") input: UsernamePasswordInput,
     @Ctx() { req, em }: MyContext
   ): Promise<UserResponse> {
-    let errors: Array<FieldErrorType<Fields>> = [];
 
-    if (username.length < 3) {
+    const errors = validateRegistration(input);
+    
+    // user has input invalid fields
+    if (errors.length) {
+      return { errors };
+    }
+
+    const userWithEmailExists = await em.findOne(User, { email: input.email });
+
+    if (userWithEmailExists) {
       errors.push({
-        field: Fields.USERNAME,
-        message: "Username cannot be less than 3 characters",
+        field: UserFields.EMAIL,
+        message: "An account with this email is already registered",
       });
+
+      return { errors };
     }
 
-    if (password.length < 3) {
-      errors.push({
-        field: Fields.PASSWORD,
-        message: "Password cannot be less than 3 characters",
-      })
-    }
-
-    const hashedPassword = await argon2.hash(password);
-
+    // we are sure the user can be created
+    const hashedPassword = await argon2.hash(input.password);
     const user = em.create(User, {
-      username,
+      email: input.email,
+      username: input.username,
       password: hashedPassword,
     });
 
@@ -98,16 +99,14 @@ export class UserResolver {
     } catch (e) {
       if (e.code === "23505") {
         errors.push({
-            field: Fields.USERNAME,
+            field: UserFields.USERNAME,
             message: "Username already exists",
           });
-        }
+
+        return { errors };
       }
-
-    if (errors.length > 0) {
-      return { errors };
     }
-
+    
     req.session.userId = user.id;
 
     return { user };
@@ -118,12 +117,12 @@ export class UserResolver {
     @Arg("input") { username, password }: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const errors: Array<FieldErrorType<Fields>> = [];
+    const errors: Array<FieldErrorType<UserFields>> = [];
     const user = await em.findOne(User, { username });
 
     if (!user) {
       errors.push({
-        field: Fields.USERNAME,
+        field: UserFields.USERNAME,
         message: "User does not exist",
       });
 
@@ -134,7 +133,7 @@ export class UserResolver {
 
     if (!isValidPassword) {
       errors.push({
-        field: Fields.PASSWORD,
+        field: UserFields.PASSWORD,
         message: "Password is incorrect",
       });
 
