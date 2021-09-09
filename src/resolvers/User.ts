@@ -13,9 +13,11 @@ import {
 import { FieldErrorType } from '../types'
 
 import { User } from "./../entities/User";
-import { COOKIE_NAME } from '../constants';
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from '../constants';
 import { FieldError } from '../utils/FieldError';
 import { validateRegistration } from '../utils/registerValidation';
+import sendEmail from '../utils/sendEmail';
+import { v4 } from 'uuid';
 
 export enum UserFields {
   EMAIL = 'email',
@@ -39,7 +41,6 @@ export class RegisterInput extends LoginInput {
   @Field()
   email: string;
 }
-
 
 /** RESOLVERS */
 @ObjectType()
@@ -175,5 +176,46 @@ export class UserResolver {
         return;
       });
     });
+  }
+
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { em, redis }: MyContext
+  ): Promise<Boolean | null> {
+    // find the user by email
+    try {
+      const user = await em.findOne(User, { email });
+      if (!user) {
+        return false; 
+      } 
+    } catch {
+      return false;
+    }
+  
+    // we found the user
+    // now send them an email
+    const token = v4();
+
+    try {
+      await redis.set(
+        FORGOT_PASSWORD_PREFIX + token,
+        token,
+        'ex',
+        1000 * 60 * 60 * 24 // 1 day
+      );
+    } catch {
+      return false;
+    }
+
+    const html = `<a href='http://localhost:3000/change-password/${token}'>Change Password</a>`
+
+    try {
+      await sendEmail(email, html);
+    } catch (e) {
+      return false;
+    } 
+
+    return true;
   }
 }
