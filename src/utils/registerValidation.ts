@@ -1,12 +1,13 @@
 import { RegisterInput } from "src/resolvers/User";
 import { FieldErrorType } from "src/types";
-import { UserFields } from '../resolvers/User';
+import { UserFields } from "../resolvers/User";
 
-
-export function validateRegistration(
-  { username, password, email }: RegisterInput, 
- ) {
-  const errors:  Array<FieldErrorType<UserFields>> = [];
+export function validateRegistration({
+  username,
+  password,
+  email,
+}: RegisterInput) {
+  const errors: Array<FieldErrorType<UserFields>> = [];
 
   if (username.length < 3) {
     errors.push({
@@ -22,8 +23,9 @@ export function validateRegistration(
     });
   }
 
-  const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  const isValidEmail =  re.test(email.toLowerCase());
+  const re =
+    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  const isValidEmail = re.test(email.toLowerCase());
 
   if (!isValidEmail) {
     errors.push({

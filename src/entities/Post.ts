@@ -1,5 +1,5 @@
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
-import { Field, Int, ObjectType } from 'type-graphql';
+import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { Field, Int, ObjectType } from "type-graphql";
 
 @ObjectType()
 @Entity()
@@ -9,14 +9,14 @@ export class Post {
   id!: number;
 
   @Field(() => String)
-  @Property({ type: 'date' })
+  @Property({ type: "date" })
   createdAt: Date = new Date();
 
   @Field(() => String)
-  @Property({ onUpdate: () => new Date(), type: 'date' })
+  @Property({ onUpdate: () => new Date(), type: "date" })
   updatedAt: Date = new Date();
 
   @Field(() => String)
-  @Property({ type: 'text' })
+  @Property({ type: "text" })
   title: string;
 }
