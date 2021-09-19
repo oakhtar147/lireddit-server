@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { MikroORM } from "@mikro-orm/core";
 import { ApolloServer } from "apollo-server-express";
 import connectRedis from "connect-redis";
@@ -8,18 +9,17 @@ import { buildSchema } from "type-graphql";
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 
 import { COOKIE_NAME, __prod__ } from "./constants";
-import mikroConfig from "./mikro-orm.config";
+import typeOrmConfig from "./typeorm.config";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/Post";
 import { UserResolver } from "./resolvers/User";
 import cors, { CorsOptions } from "cors";
+import { createConnection } from "typeorm";
 
-import "reflect-metadata";
 import { MyContext } from "./types";
 
 (async () => {
-  const orm = await MikroORM.init(mikroConfig);
-  await orm.getMigrator().up();
+  const conn = await createConnection(typeOrmConfig);
 
   const RedisStore = connectRedis(session);
   const redisClient = new Redis();
@@ -63,7 +63,6 @@ import { MyContext } from "./types";
         req,
         res,
         redis: redisClient,
-        em: orm.em,
       };
     },
     plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
